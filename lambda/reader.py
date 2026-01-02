@@ -4,67 +4,65 @@ import boto3
 from botocore.exceptions import ClientError
 
 DDB_TABLE = os.environ["DDB_TABLE"]
-SECRET_ARN = os.environ.get("SECRET_ARN")  # required for the "secret retrieval" proof
+SECRET_ARN = os.environ.get("SECRET_ARN")  # required for screenshot proof
 
 dynamodb = boto3.resource("dynamodb")
 secrets = boto3.client("secretsmanager")
 
-def _get_demo_secret_metadata():
+
+def _get_demo_secret():
     """
-    Retrieve the secret at runtime and return safe metadata only.
-    We do NOT print the secret value.
+    Retrieve a demo JSON secret from Secrets Manager.
+    We only log metadata for proof. We do NOT print the secret.
     """
     if not SECRET_ARN:
-        return {"retrieved": False, "reason": "SECRET_ARN env var not set"}
+        print("SECRET_ARN is not set. Skipping secret retrieval.")
+        return None
 
     try:
         resp = secrets.get_secret_value(SecretId=SECRET_ARN)
+
+        # Proof lines for your screenshot (safe to show)
+        print("Secrets Manager retrieval: SUCCESS")
+        print(f"SecretId used: {SECRET_ARN}")
+        print(f"Secret VersionId: {resp.get('VersionId', 'n/a')}")
+
         secret_str = resp.get("SecretString", "{}")
-
-        # Parse just to prove it is valid JSON, but don't print it
-        parsed = json.loads(secret_str) if secret_str else {}
-
-        return {
-            "retrieved": True,
-            "secret_id": resp.get("ARN") or SECRET_ARN,
-            "keys_present": list(parsed.keys())[:5]  # safe: prints only key names
-        }
+        return json.loads(secret_str)
 
     except ClientError as e:
-        return {"retrieved": False, "error": str(e)}
+        print("Secrets Manager retrieval: FAILED")
+        print(f"Error: {e}")
+        raise
+
 
 def lambda_handler(event, context):
     print("---------------------------------------")
-    print("Secure Secret Retrieval Demo")
-    print("Owner: Nisha")
+    print(" Secure Secret Retrieval Demo")
+    print(" Owner: Nisha")
     print("---------------------------------------")
 
-    # This is the key evidence line for Screenshot Set 1
-    secret_meta = _get_demo_secret_metadata()
-    if secret_meta.get("retrieved"):
-        print("Secrets Manager: GetSecretValue succeeded (secret value not logged).")
-        print(f"Secret reference: {secret_meta.get('secret_id')}")
-        print(f"Secret JSON keys (sample): {secret_meta.get('keys_present')}")
-    else:
-        print("Secrets Manager: GetSecretValue failed or not configured.")
-        print(f"Details: {secret_meta}")
+    # 1) Prove secret retrieval
+    demo_secret = _get_demo_secret()
+    if isinstance(demo_secret, dict):
+        print("Demo secret retrieved (keys only):", list(demo_secret.keys()))
 
-    # DynamoDB validation
+    # 2) Prove DynamoDB still works without hardcoded creds
     table = dynamodb.Table(DDB_TABLE)
     resp = table.scan()
 
     print("------------ STUDENT DETAILS -----------")
     for item in resp.get("Items", []):
-        print(f"Student Id       : {item.get('StudId')}")
-        print(f"Student Name     : {item.get('FirstName')} {item.get('LastName')}")
-        print(f"Department       : {item.get('Dept')}")
-        print(f"Age              : {item.get('Age')}")
+        print("Student Id       :", item.get("StudId"))
+        print("Student Name     :", item.get("FirstName"), item.get("LastName"))
+        print("Department       :", item.get("Dept"))
+        print("Age              :", item.get("Age"))
         print("---------------------------------------")
 
     print("Invocation completed successfully.")
     return {
         "statusCode": 200,
         "owner": "Nisha",
-        "secret_retrieved": bool(secret_meta.get("retrieved")),
-        "records_returned": len(resp.get("Items", []))
+        "records_returned": len(resp.get("Items", [])),
+        "secret_retrieved": True if demo_secret else False
     }
