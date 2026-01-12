@@ -1,5 +1,16 @@
 # Secure Secret Retrieval in AWS Lambda
 
+![AWS](https://img.shields.io/badge/AWS-Cloud-orange)
+![AWS Lambda](https://img.shields.io/badge/AWS-Lambda-orange)
+![AWS Secrets Manager](https://img.shields.io/badge/AWS-Secrets%20Manager-orange)
+![IAM](https://img.shields.io/badge/AWS-IAM-orange)
+![CloudTrail](https://img.shields.io/badge/AWS-CloudTrail-orange)
+![CloudWatch](https://img.shields.io/badge/AWS-CloudWatch-orange)
+![Python](https://img.shields.io/badge/Python-3.12-blue)
+![Zero Trust](https://img.shields.io/badge/Architecture-Zero%20Trust-blue)
+![NIST 800-53](https://img.shields.io/badge/Compliance-NIST%20800--53-blue)
+
+
 ## Overview
 
 This lab demonstrates a secure approach to handling sensitive credentials and configuration values in AWS Lambda by eliminating hardcoded secrets and retrieving protected values from AWS Secrets Manager at runtime.
